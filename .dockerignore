@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/*.tsbuildinfo
+backend/storage
+backend/tests
+**/.env
+!**/.env.example
+.vscode
+.idea

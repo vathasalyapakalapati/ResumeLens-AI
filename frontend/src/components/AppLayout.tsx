@@ -1,23 +1,21 @@
-import { Aperture, FileText, History, LayoutDashboard, Plus, Settings } from 'lucide-react'
+import { Aperture, History, Plus } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { UserMenu } from '@/components/UserMenu'
 import { cn } from '@/lib/utils'
 
 const NAV = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/analyze', label: 'New analysis', icon: Plus },
   { to: '/history', label: 'History', icon: History },
-  { to: '/resumes', label: 'Resumes', icon: FileText },
-  { to: '/settings', label: 'Settings', icon: Settings },
 ]
 
-/** Navbar and page frame for every signed-in page. The avatar menu arrives with auth in phase 2. */
+/** Navbar and page frame for every signed-in page. */
 export function AppLayout() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
-          <NavLink to="/dashboard" className="flex items-center gap-2 font-semibold">
+          <NavLink to="/analyze" className="flex items-center gap-2 font-semibold">
             <Aperture className="size-5 text-primary" />
             ResumeLens <span className="text-primary">AI</span>
           </NavLink>
@@ -38,8 +36,9 @@ export function AppLayout() {
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
+            <UserMenu />
           </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto border-t px-2 py-1 md:hidden">

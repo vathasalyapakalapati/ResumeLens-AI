@@ -11,6 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     SmallInteger,
     String,
     Text,
@@ -50,6 +51,7 @@ class User(Base):
 
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
+    __table_args__ = (Index("idx_refresh_tokens_hash", "token_hash", unique=True),)
 
     id: Mapped[uuid.UUID] = _id()
     user_id: Mapped[uuid.UUID] = _owner()
@@ -68,7 +70,10 @@ class Resume(Base):
     user_id: Mapped[uuid.UUID] = _owner()
     title: Mapped[str] = mapped_column(String(150), nullable=False)
     file_name: Mapped[str | None] = mapped_column(String(255))
-    blob_path: Mapped[str | None] = mapped_column(Text)
+    blob_path: Mapped[str | None] = mapped_column(Text)  # legacy: files saved on local disk before 0004
+    # The original upload. Kept in Postgres because hosted disks are wiped on redeploy.
+    # Deferred: only loaded when the file is downloaded.
+    file_data: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
     raw_text: Mapped[str] = mapped_column(Text, nullable=False)
     parsed: Mapped[dict | None] = mapped_column(JSONB)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBED_DIM))
@@ -105,11 +110,13 @@ class Analysis(Base):
 
     id: Mapped[uuid.UUID] = _id()
     user_id: Mapped[uuid.UUID] = _owner()
-    resume_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("resumes.id", ondelete="CASCADE"), nullable=False
+    # SET NULL, not CASCADE: deleting a resume or JD must not erase history. The report keeps a
+    # snapshot of their titles and of every line it cites.
+    resume_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("resumes.id", ondelete="SET NULL")
     )
-    jd_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("job_descriptions.id", ondelete="CASCADE"), nullable=False
+    jd_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("job_descriptions.id", ondelete="SET NULL")
     )
     status: Mapped[str] = mapped_column(String(12), nullable=False, server_default=text("'queued'"))
     current_step: Mapped[str | None] = mapped_column(String(20))  # drives the progress stepper

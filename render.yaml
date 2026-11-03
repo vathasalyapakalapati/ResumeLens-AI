@@ -1,0 +1,24 @@
+# Render Blueprint: one free web service built from the Dockerfile.
+# In Render: New > Blueprint > pick this repo. It asks for the values marked sync: false.
+services:
+  - type: web
+    name: resumelens-ai
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Postgres connection string, e.g. from Neon (free): postgresql://user:pass@host/db?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+      # Signs login tokens. Render generates a random value once.
+      - key: JWT_SECRET
+        generateValue: true
+      # The site is served over HTTPS, so auth cookies are HTTPS-only.
+      - key: COOKIE_SECURE
+        value: "true"
+      # mock = built-in matcher (no key). To use an AI model later, set this to groq (or gemini)
+      # and add GROQ_API_KEY (or GOOGLE_API_KEY) under the service's Environment settings.
+      - key: LLM_PROVIDER
+        value: mock

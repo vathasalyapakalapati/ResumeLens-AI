@@ -3,9 +3,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from '@/components/AppLayout'
+import { RequireAuth } from '@/components/RequireAuth'
 import { AuthPage } from '@/pages/AuthPage'
-import { Dashboard } from '@/pages/Dashboard'
-import { History, NewAnalysis, Report, Resumes, Settings } from '@/pages/Placeholders'
+import { History } from '@/pages/History'
+import { JobView, ResumeView } from '@/pages/Library'
+import { NewAnalysis } from '@/pages/NewAnalysis'
+import { Report } from '@/pages/Report'
 import './index.css'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } })
@@ -17,16 +20,17 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route path="/login" element={<AuthPage mode="login" />} />
           <Route path="/signup" element={<AuthPage mode="signup" />} />
-          {/* Phase 2 wraps these in a route guard that sends logged-out users to /login. */}
-          <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/analyze" element={<NewAnalysis />} />
-            <Route path="/reports/:id" element={<Report />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/resumes" element={<Resumes />} />
-            <Route path="/settings" element={<Settings />} />
+          {/* Logged-out visitors are sent to /login. */}
+          <Route element={<RequireAuth />}>
+            <Route element={<AppLayout />}>
+              <Route path="/analyze" element={<NewAnalysis />} />
+              <Route path="/reports/:id" element={<Report />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/resumes/:id" element={<ResumeView />} />
+              <Route path="/jobs/:id" element={<JobView />} />
+            </Route>
           </Route>
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/analyze" replace />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
