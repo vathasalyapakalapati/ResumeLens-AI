@@ -1,5 +1,17 @@
-# Render Blueprint: one free web service built from the Dockerfile.
-# In Render: New > Blueprint > pick this repo. It asks for the values marked sync: false.
+# Render Blueprint: a free PostgreSQL database + one free web service built from the Dockerfile.
+# In Render: New > Blueprint > pick this repo > Apply. Nothing needs to be typed in.
+#
+# Note: Render deletes free databases 30 days after creation (with email warnings first).
+# To keep data longer, either upgrade the database plan, or point DATABASE_URL at another free
+# Postgres such as Neon (neon.tech) and remove the `databases` section below.
+
+databases:
+  - name: resumelens-db
+    plan: free
+    databaseName: resumelens
+    user: resumelens
+    ipAllowList: []  # only reachable from Render services, not the public internet
+
 services:
   - type: web
     name: resumelens-ai
@@ -9,9 +21,11 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
-      # Postgres connection string, e.g. from Neon (free): postgresql://user:pass@host/db?sslmode=require
+      # Filled in by Render from the database above (private network address).
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: resumelens-db
+          property: connectionString
       # Signs login tokens. Render generates a random value once.
       - key: JWT_SECRET
         generateValue: true

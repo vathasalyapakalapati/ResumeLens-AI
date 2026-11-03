@@ -12,9 +12,9 @@ Everything runs on free tiers. The original spec used Azure; this is what each p
 |---|---|---|
 | Azure OpenAI chat model | Groq (`openai/gpt-oss-120b`) or Gemini, picked with `LLM_PROVIDER`; `mock` needs no key | Free tier |
 | text-embedding-3-small | Gemini embeddings at 768 dims, or `local` hashing vectors with no key | Free |
-| Azure Database for PostgreSQL | Postgres 16 + pgvector in Docker locally; Neon free tier when hosted | Free |
+| Azure Database for PostgreSQL | Postgres 16 + pgvector in Docker locally; Render free PostgreSQL when hosted | Free (Render deletes free databases after 30 days) |
 | App Service + Static Web Apps | One Render free web service (FastAPI serves the built React app) | Free |
-| Azure Blob Storage | Local `backend/storage/` for now (only the relative path is in Postgres); an object store such as Cloudflare R2 when hosted, since Render's free disk is wiped on redeploy | Free |
+| Azure Blob Storage | Uploaded files are stored in PostgreSQL, since Render's free disk is wiped on every redeploy | Free |
 
 ## Run it locally
 
@@ -42,15 +42,17 @@ If backend code changes don't show up, stop the API with `Ctrl+C` and start it a
 
 Run the backend tests with `.\.venv\Scripts\python -m pytest` from `backend/` while the database is up.
 
-## Deploy (Render + Neon, both free)
+## Deploy on Render (free)
 
-The [Dockerfile](Dockerfile) builds the React app and serves it from FastAPI, so the whole app is one Render web service. Migrations run on every start. Uploaded files are stored in Postgres, because Render's free disk is wiped on every redeploy and restart.
+The [Dockerfile](Dockerfile) builds the React app and serves it from FastAPI, so the whole app is one Render web service. [render.yaml](render.yaml) also creates a free Render PostgreSQL database and connects the app to it. Migrations run on every start. Uploaded files are stored in PostgreSQL, because Render's free disk is wiped on every redeploy and restart.
 
-1. **Database:** create a free project at [neon.tech](https://neon.tech) and copy its connection string (`postgresql://...?sslmode=require`).
-2. **Render:** go to New → Blueprint, pick this GitHub repo, and paste the Neon string as `DATABASE_URL`. [render.yaml](render.yaml) sets everything else (random `JWT_SECRET`, HTTPS-only cookies, built-in matcher).
+1. Push this repo to GitHub.
+2. In Render: New → Blueprint → pick the repo → Apply. No values need to be typed in; Render creates the database, a random `JWT_SECRET` and HTTPS-only cookies.
 3. Every push to `main` redeploys automatically.
 
-On the free plan the service sleeps after 15 minutes without traffic, so the first request after that takes about a minute.
+Free-plan limits:
+- The web service sleeps after 15 minutes without traffic, so the next request takes about a minute.
+- **Render deletes a free database 30 days after it is created** (it emails you first). After that, create a new free database (data is not carried over), upgrade it, or use another free PostgreSQL such as [Neon](https://neon.tech), which doesn't expire: set `DATABASE_URL` to its connection string and remove the `databases` section from `render.yaml`.
 
 ## Project layout
 
@@ -72,4 +74,4 @@ docker-compose.yml   Postgres 16 + pgvector for development
 
 - [x] **1. Foundation**: monorepo, Docker Compose with Postgres + pgvector, FastAPI skeleton, Alembic migrations, React + Vite + Tailwind + shadcn/ui shell with dark mode
 - [x] **2. Core app**: sign up / log in (Argon2, httpOnly cookies, route guard); resume upload (PDF/DOCX) and JD paste/upload with numbered lines; scoring and requirement matching with evidence; match report; history
-- [ ] **3. Polish and deploy**: tests for the React app, GitHub Actions CI, deploy to Render + Neon with file storage on an object store
+- [ ] **3. Polish**: tests for the React app, GitHub Actions CI
