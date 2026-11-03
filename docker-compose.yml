@@ -1,0 +1,22 @@
+# Local development: PostgreSQL 16 with the pgvector extension.
+# Start it with `docker compose up -d db`. Port 5433 avoids clashing with any Postgres already on 5432.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: resumelens-db
+    environment:
+      POSTGRES_USER: resumelens
+      POSTGRES_PASSWORD: resumelens
+      POSTGRES_DB: resumelens
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resumelens -d resumelens"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
