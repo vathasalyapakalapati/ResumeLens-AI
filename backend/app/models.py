@@ -149,3 +149,59 @@ class Suggestion(Base):
     evidence_line: Mapped[str | None] = mapped_column(String(10))  # e.g. 'L14'
     impact: Mapped[str | None] = mapped_column(String(6))
     status: Mapped[str] = mapped_column(String(10), nullable=False, server_default=text("'open'"))
+
+
+class Interview(Base):
+    """An AI mock interview about one analysis (resume x JD). The video never reaches the server:
+    it stays in the candidate's browser. Only questions, answers (text) and feedback are stored."""
+
+    __tablename__ = "interviews"
+    __table_args__ = (
+        CheckConstraint("status IN ('active', 'completed')", name="ck_interview_status"),
+        CheckConstraint("question_count BETWEEN 10 AND 15", name="ck_interview_count"),
+        Index("idx_interviews_analysis_date", "analysis_id", text("created_at DESC")),
+    )
+
+    id: Mapped[uuid.UUID] = _id()
+    user_id: Mapped[uuid.UUID] = _owner()
+    analysis_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(12), nullable=False, server_default=text("'active'"))
+    interviewer: Mapped[str] = mapped_column(String(20), nullable=False)  # persona key, e.g. "maya"
+    question_count: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    current_question: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text("1"))
+    follow_ups: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text("0"))
+    plan: Mapped[list] = mapped_column(JSONB, nullable=False)  # [{text, focus, requirement}]
+    turns: Mapped[list] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    feedback: Mapped[dict | None] = mapped_column(JSONB)
+    engine: Mapped[str] = mapped_column(String(60), nullable=False)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = _created()
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class PrepBook(Base):
+    """An interview prep book: scenario questions in four categories, with answer guidance,
+    generated from one analysis (resume x JD x report)."""
+
+    __tablename__ = "prep_books"
+    __table_args__ = (
+        CheckConstraint("status IN ('queued', 'running', 'done', 'failed')", name="ck_prep_status"),
+        CheckConstraint("per_category BETWEEN 3 AND 10", name="ck_prep_per_category"),
+        Index("idx_prep_books_user_date", "user_id", text("created_at DESC")),
+    )
+
+    id: Mapped[uuid.UUID] = _id()
+    user_id: Mapped[uuid.UUID] = _owner()
+    analysis_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(12), nullable=False, server_default=text("'queued'"))
+    per_category: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    current_step: Mapped[str | None] = mapped_column(String(20))  # category being generated
+    content: Mapped[dict | None] = mapped_column(JSONB)
+    engine: Mapped[str | None] = mapped_column(String(60))
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = _created()
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

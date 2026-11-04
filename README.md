@@ -66,9 +66,15 @@ docker-compose.yml   Postgres 16 + pgvector for development
 
 1. **New analysis**: upload a new resume (PDF/DOCX), or pick a saved one, and score it against a new JD (paste or upload) or a saved one.
 2. **Match report**: a 0-100 score, a must-have / nice-to-have requirement checklist (met, partial or missing), the resume lines that prove each requirement, a score breakdown, and the ATS keywords that are present or missing.
-3. **History**: every analysis with its score and the resume and JD it used. Reports keep a snapshot, so they still read correctly after the resume or JD is deleted.
+3. **AI mock interview**: from any report, start a video-call style interview (10-15 questions, Maya or James as interviewer) about that resume, JD and report. Your camera appears in the corner; answers are spoken and transcribed. The recording (interviewer voice + your camera and mic) is saved only in your browser and can be watched and downloaded, along with the transcript (.txt/.md) and feedback. Take as many as you like.
+4. **Interview Prep**: pick any scored analysis and generate a prep book of scenario questions in four categories (technical, system design, cultural fit, behavioural), each with what the interviewer is looking for, how to answer, and the resume lines to draw on. Download it as PDF or Markdown.
+5. **History**: every analysis with its score and the resume and JD it used. Reports keep a snapshot, so they still read correctly after the resume or JD is deleted.
 
 **How scoring works:** the matcher finds the requirements in the JD and checks each one against the numbered resume lines. With `LLM_PROVIDER=mock` (no key) the built-in matcher uses a skills vocabulary with aliases, years of experience from date ranges, degree levels and wording overlap. Set `LLM_PROVIDER=groq` or `gemini` with a free key to use an AI model instead; it falls back to the built-in matcher if the model fails, and any evidence line it cites that doesn't exist is thrown out. The score itself is always computed in Python: 75% requirement fit (must-haves weigh 3, nice-to-haves 1; partial = half credit) plus 25% keyword coverage.
+
+**How the interview works:** with a Groq key the interviewer is an AI model: it plans questions from your gaps and strengths, asks at most one follow-up per question, and writes feedback; Groq Whisper transcribes your answers. Without a key it uses a scripted plan built from the same report, the browser's speech recognition (Chrome/Edge; elsewhere you type), and basic feedback. The interviewer's voice is Piper TTS running in your browser (a free ~60 MB model downloaded once from Hugging Face), so it can be recorded; if it can't load, the browser's own voice is used and the recording shows the questions as captions. The server only ever stores text: no audio or video leaves your device except the answer clips sent for transcription.
+
+To turn on the AI interviewer, get a free key at [console.groq.com/keys](https://console.groq.com/keys) and set `LLM_PROVIDER=groq` and `GROQ_API_KEY=...` in `backend/.env` (or in Render's Environment settings), then restart the API.
 
 ## Build phases
 

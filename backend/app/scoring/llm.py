@@ -6,15 +6,10 @@ trust it blindly: unknown line ids are dropped, and a "met"/"partial" with no va
 is downgraded (the truth guard).
 """
 
-import json
-
-import httpx
-
-from ..config import get_settings
+from .. import ai
 from .types import Line, MatchResult, Requirement
 
 PROMPT_VERSION = "match-v1"
-TIMEOUT = 90.0
 
 SYSTEM = """You are an expert technical recruiter and ATS analyst. Compare a resume with a job description.
 Both are given as numbered lines (L1, L2, ...). Respond with JSON only, exactly this shape:
@@ -49,55 +44,14 @@ def _user_prompt(jd: list[Line], resume: list[Line]) -> str:
     return f"JOB DESCRIPTION\n{_numbered(jd)}\n\nRESUME\n{_numbered(resume)}"
 
 
-def available() -> bool:
-    s = get_settings()
-    return (s.llm_provider == "groq" and bool(s.groq_api_key)) or (
-        s.llm_provider == "gemini" and bool(s.google_api_key)
-    )
-
-
-def _call_groq(user: str) -> tuple[str, str]:
-    s = get_settings()
-    res = httpx.post(
-        "https://api.groq.com/openai/v1/chat/completions",
-        headers={"Authorization": f"Bearer {s.groq_api_key}"},
-        json={
-            "model": s.groq_model,
-            "temperature": 0,
-            "response_format": {"type": "json_object"},
-            "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}],
-        },
-        timeout=TIMEOUT,
-    )
-    res.raise_for_status()
-    return res.json()["choices"][0]["message"]["content"], f"groq:{s.groq_model}"
-
-
-def _call_gemini(user: str) -> tuple[str, str]:
-    s = get_settings()
-    res = httpx.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{s.gemini_model}:generateContent",
-        headers={"x-goog-api-key": s.google_api_key},
-        json={
-            "systemInstruction": {"parts": [{"text": SYSTEM}]},
-            "contents": [{"role": "user", "parts": [{"text": user}]}],
-            "generationConfig": {"temperature": 0, "responseMimeType": "application/json"},
-        },
-        timeout=TIMEOUT,
-    )
-    res.raise_for_status()
-    return res.json()["candidates"][0]["content"]["parts"][0]["text"], f"gemini:{s.gemini_model}"
-
-
 def _pick(value, allowed: tuple[str, ...], default: str) -> str:
     return value if value in allowed else default
 
 
 def run(jd: list[Line], resume: list[Line]) -> MatchResult:
     """Raises on network/format errors; the caller falls back to the built-in matcher."""
-    call = _call_groq if get_settings().llm_provider == "groq" else _call_gemini
-    raw, engine = call(_user_prompt(jd, resume))
-    data = json.loads(raw)
+    data = ai.chat_json(SYSTEM, _user_prompt(jd, resume))
+    engine = ai.engine_name()
 
     jd_ids = {line.id for line in jd}
     resume_ids = {line.id for line in resume}

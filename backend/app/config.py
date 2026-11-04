@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     llm_provider: str = "mock"
     groq_api_key: str = ""
     groq_model: str = "openai/gpt-oss-120b"
+    groq_stt_model: str = "whisper-large-v3-turbo"  # speech-to-text for interview answers
     google_api_key: str = ""
     gemini_model: str = "gemini-flash-latest"
 

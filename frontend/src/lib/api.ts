@@ -199,3 +199,159 @@ export const getAnalysis = (id: string) => api.get<AnalysisDetail>(`/analyses/${
 export const startAnalysis = (body: { resume_id: string; jd_id: string }) =>
   api.post<AnalysisDetail>('/analyses', body).then((r) => r.data)
 export const deleteAnalysis = (id: string) => api.delete(`/analyses/${id}`).then(() => undefined)
+
+// ---------- AI interviews ----------
+
+export type Interviewer = 'maya' | 'james'
+
+export interface InterviewTurn {
+  role: 'interviewer' | 'candidate'
+  kind: 'question' | 'follow_up' | 'closing' | 'answer'
+  q: number
+  text: string
+  t: number // seconds since the recording started
+}
+
+export interface InterviewFeedback {
+  overall_score: number | null
+  summary: string
+  strengths: string[]
+  improvements: string[]
+  questions: { number: number; rating: number | null; comment: string }[]
+  engine: string
+}
+
+export interface InterviewSummary {
+  id: string
+  analysis_id: string
+  status: 'active' | 'completed'
+  interviewer: Interviewer
+  question_count: number
+  answered: number
+  overall_score: number | null
+  duration_seconds: number | null
+  created_at: string
+}
+
+export interface InterviewDetail extends InterviewSummary {
+  interviewer_name: string
+  interviewer_title: string
+  candidate_name: string
+  current_question: number
+  done: boolean
+  turns: InterviewTurn[]
+  questions: string[]
+  feedback: InterviewFeedback | null
+  engine: string
+  role: string | null
+  company: string | null
+  resume_title: string | null
+}
+
+export interface InterviewConfig {
+  ai: boolean
+  transcription: 'groq' | 'browser'
+}
+
+export interface InterviewListItem extends InterviewSummary {
+  role: string | null
+  company: string | null
+  resume_title: string | null
+  match_score: number | null
+}
+
+export const listAllInterviews = () => api.get<InterviewListItem[]>('/interviews').then((r) => r.data)
+export const getInterviewConfig = () => api.get<InterviewConfig>('/interviews/config').then((r) => r.data)
+export const listInterviews = (analysisId: string) =>
+  api.get<InterviewSummary[]>(`/analyses/${analysisId}/interviews`).then((r) => r.data)
+export const startInterview = (analysisId: string, body: { question_count: number; interviewer: Interviewer }) =>
+  api.post<InterviewDetail>(`/analyses/${analysisId}/interviews`, body).then((r) => r.data)
+export const getInterview = (id: string) => api.get<InterviewDetail>(`/interviews/${id}`).then((r) => r.data)
+export const answerInterview = (id: string, body: { text: string; elapsed: number }) =>
+  api
+    .post<{ turn: InterviewTurn; done: boolean; current_question: number }>(`/interviews/${id}/answer`, body)
+    .then((r) => r.data)
+export const transcribeAnswer = (id: string, audio: Blob) => {
+  const fd = new FormData()
+  fd.append('audio', audio, audio.type.includes('mp4') ? 'answer.mp4' : 'answer.webm')
+  return api.post<{ text: string }>(`/interviews/${id}/transcribe`, fd).then((r) => r.data.text)
+}
+export const finishInterview = (id: string, elapsed: number) =>
+  api.post<InterviewDetail>(`/interviews/${id}/finish`, { elapsed }).then((r) => r.data)
+export const deleteInterview = (id: string) => api.delete(`/interviews/${id}`).then(() => undefined)
+
+/** Download the transcript (.txt or .md) through axios so an expired session refreshes. */
+export async function downloadTranscript(id: string, format: 'txt' | 'md') {
+  const res = await api.get<Blob>(`/interviews/${id}/transcript`, { params: { format }, responseType: 'blob' })
+  const name = /filename="([^"]+)"/.exec(res.headers['content-disposition'] ?? '')?.[1] ?? `interview.${format}`
+  saveBlob(res.data, name)
+}
+
+export function saveBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob)
+  const a = Object.assign(document.createElement('a'), { href: url, download: name })
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+// ---------- interview prep books ----------
+
+export type PrepCategoryKey = 'technical' | 'system_design' | 'culture' | 'behavioral'
+
+export interface PrepQuestion {
+  id: string
+  category: PrepCategoryKey
+  question: string
+  why: string
+  approach: string[]
+  difficulty: 'easy' | 'medium' | 'hard'
+  evidence: string[]
+  focus: string | null
+  requirement: string | null
+}
+
+export interface PrepContent {
+  role: string
+  company: string | null
+  resume: string | null
+  verdict: string | null
+  overview: string
+  tips: string[]
+  warnings: string[]
+  categories: { key: PrepCategoryKey; title: string; description: string; questions: PrepQuestion[] }[]
+  resume_lines: Record<string, string>
+  generated_at: string
+}
+
+export interface PrepSummary {
+  id: string
+  analysis_id: string
+  status: 'queued' | 'running' | 'done' | 'failed'
+  per_category: number
+  question_count: number
+  role: string | null
+  company: string | null
+  resume_title: string | null
+  match_score: number | null
+  created_at: string
+}
+
+export interface PrepDetail extends PrepSummary {
+  current_step: PrepCategoryKey | null
+  error: string | null
+  engine: string | null
+  content: PrepContent | null
+  completed_at: string | null
+}
+
+export const listPrep = () => api.get<PrepSummary[]>('/prep').then((r) => r.data)
+export const getPrep = (id: string) => api.get<PrepDetail>(`/prep/${id}`).then((r) => r.data)
+export const createPrep = (analysisId: string, per_category: number) =>
+  api.post<PrepDetail>(`/analyses/${analysisId}/prep`, { per_category }).then((r) => r.data)
+export const deletePrep = (id: string) => api.delete(`/prep/${id}`).then(() => undefined)
+
+export async function downloadPrep(id: string, format: 'pdf' | 'md') {
+  const res = await api.get<Blob>(`/prep/${id}/download`, { params: { format }, responseType: 'blob' })
+  const name = /filename="([^"]+)"/.exec(res.headers['content-disposition'] ?? '')?.[1] ?? `interview-prep.${format}`
+  saveBlob(res.data, name)
+}

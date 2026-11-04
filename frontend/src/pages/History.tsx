@@ -1,4 +1,4 @@
-import { History as HistoryIcon, Loader2, Plus, Search, Trash2 } from 'lucide-react'
+import { BookOpen, History as HistoryIcon, Loader2, Plus, Search, Trash2, Video } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/EmptyState'
@@ -83,6 +83,26 @@ export function History() {
                     {formatDate(a.created_at)}
                   </p>
                 </Link>
+                {a.status === 'done' && (
+                  <Link
+                    to={`/prep?analysis=${a.id}`}
+                    className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+                    aria-label="Make an interview prep book for this job"
+                    title="Interview prep"
+                  >
+                    <BookOpen />
+                  </Link>
+                )}
+                {a.status === 'done' && (
+                  <Link
+                    to={`/interviews?analysis=${a.id}`}
+                    className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+                    aria-label="Practise an AI interview for this job"
+                    title="AI interview"
+                  >
+                    <Video />
+                  </Link>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

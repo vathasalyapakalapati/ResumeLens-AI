@@ -1,4 +1,4 @@
-import { Aperture, History, Plus } from 'lucide-react'
+import { Aperture, BookOpen, History, Plus, Video } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { UserMenu } from '@/components/UserMenu'
@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 const NAV = [
   { to: '/analyze', label: 'New analysis', icon: Plus },
   { to: '/history', label: 'History', icon: History },
+  { to: '/interviews', label: 'AI Interview', icon: Video },
+  { to: '/prep', label: 'Interview Prep', icon: BookOpen },
 ]
 
 /** Navbar and page frame for every signed-in page. */

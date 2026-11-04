@@ -8,6 +8,7 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
+from .. import ai
 from ..db import SessionLocal
 from ..models import Analysis, JobDescription, Resume
 from . import heuristic, llm
@@ -32,7 +33,7 @@ def _set_step(analysis_id: uuid.UUID, step: str) -> None:
 
 
 def _match(jd: list[Line], resume: list[Line]) -> MatchResult:
-    if llm.available():
+    if ai.chat_available():
         try:
             return llm.run(jd, resume)
         except Exception as exc:  # network, quota, bad JSON: never fail the analysis for it

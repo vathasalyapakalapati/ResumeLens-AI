@@ -10,6 +10,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { InterviewsPanel } from '@/components/InterviewsPanel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { scoreBg, scoreStroke, scoreTone, useAnalysis, useStartAnalysis } from '@/lib/analyses'
@@ -296,7 +297,12 @@ export function Report() {
           </CardContent>
         </Card>
       )}
-      {a?.status === 'done' && a.report && <Done a={a} />}
+      {a?.status === 'done' && a.report && (
+        <>
+          <Done a={a} />
+          <InterviewsPanel analysisId={a.id} />
+        </>
+      )}
       {rerun.isError && <p className="text-sm text-weak">{errorMessage(rerun.error)}</p>}
     </div>
   )
