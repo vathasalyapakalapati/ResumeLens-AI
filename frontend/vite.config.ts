@@ -8,6 +8,8 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { '@': path.resolve(__dirname, './src') } },
+  // The interview voice runs in a module worker (Piper TTS splits into several chunks).
+  worker: { format: 'es' },
   server: {
     port: 5180,
     strictPort: true,

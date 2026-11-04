@@ -10,12 +10,16 @@ from .analyses import router as analyses_router
 from .auth import router as auth_router
 from .config import get_settings
 from .db import get_db
+from .interviews import router as interviews_router
 from .library import router as library_router
+from .prep import router as prep_router
 
 app = FastAPI(title="ResumeLens AI", version="0.1.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
 app.include_router(auth_router)
 app.include_router(library_router)
 app.include_router(analyses_router)
+app.include_router(interviews_router)
+app.include_router(prep_router)
 
 
 @app.get("/api/health")
